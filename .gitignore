@@ -1,0 +1,28 @@
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+db.sqlite3
+media/
+static/
+
+# Node.js / React
+node_modules/
+dist/
+build/
+.eslintcache
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
