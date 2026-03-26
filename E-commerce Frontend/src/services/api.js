@@ -14,6 +14,56 @@ const getAuthHeaders = () => {
   return headers;
 };
 
+/**
+ * Centrally handle fetch responses to prevent "Unexpected end of JSON input"
+ * and provide better error reporting.
+ */
+const handleResponse = async (response) => {
+  const contentType = response.headers.get('content-type');
+  const isJson = contentType && contentType.includes('application/json');
+  
+  // For successful empty responses (e.g. 204 No Content)
+  if (response.status === 204) {
+    return null;
+  }
+
+  let data;
+  try {
+    const text = await response.text();
+    // If response is empty, return null or empty object based on status
+    if (!text) {
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status} with no body`);
+      }
+      return null;
+    }
+    
+    // Attempt to parse text as JSON
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}`);
+      }
+      // If it's 200 but not JSON, maybe it's just a string message
+      return text;
+    }
+  } catch (error) {
+    if (error.name === 'SyntaxError') {
+      throw new Error(`Invalid JSON response from server (Status ${response.status})`);
+    }
+    throw error;
+  }
+
+  if (!response.ok) {
+    // If data is an object with errors, stringify it
+    const errorMsg = typeof data === 'object' ? JSON.stringify(data) : (data || `Request failed with status ${response.status}`);
+    throw new Error(errorMsg);
+  }
+
+  return data;
+};
+
 // Helper to paginate mock data (kept for fallback if needed)
 const paginate = (arr, page = 1, limit = 20) => {
   const start = (page - 1) * limit;
@@ -29,13 +79,12 @@ export const getItems = async (page = 1, limit = 12, filters = {}) => {
     const params = new URLSearchParams({ page, limit, ...filters });
     const url = `${BASE_URL}/products/?${params.toString()}`;
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Failed to fetch items');
-    const json = await response.json();
+    const json = await handleResponse(response);
     
-    if (json.results && Array.isArray(json.results)) {
+    if (json && json.results && Array.isArray(json.results)) {
       return { data: json.results, total: json.count || json.results.length };
     }
-    return { data: json, total: json.length };
+    return { data: json || [], total: (json && json.length) || 0 };
   } catch (error) {
     console.error('Error fetching items from backend:', error);
     return { data: [], total: 0 };
@@ -48,8 +97,7 @@ export const getItems = async (page = 1, limit = 12, filters = {}) => {
 export const getItemById = async (id) => {
   try {
     const response = await fetch(`${BASE_URL}/products/${id}/`);
-    if (!response.ok) throw new Error('Failed to fetch item');
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error fetching item from backend:', error);
     throw error;
@@ -67,8 +115,7 @@ export const contactAdmin = async ({ name, email, subject, message }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, subject, message, created_at: Date.now() }),
       });
-      if (!response.ok) throw new Error('Failed to send message');
-      return await response.json();
+      return await handleResponse(response);
     }
 
     // No external endpoint configured — simulate success by storing locally
@@ -110,11 +157,7 @@ export const createItem = async (itemData) => {
       body: JSON.stringify(payload),
     });
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(JSON.stringify(error) || 'Failed to create item');
-    }
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error creating item:', error);
     throw error;
@@ -135,11 +178,7 @@ export const updateItem = async (id, itemData) => {
       }),
     });
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(JSON.stringify(error) || 'Failed to update item');
-    }
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error updating item:', error);
     throw error;
@@ -169,9 +208,10 @@ export const deleteItem = async (id) => {
 export const getCategories = async () => {
   try {
     const response = await fetch(`${BASE_URL}/categories/?limit=100`);
-    if (!response.ok) throw new Error('Failed to fetch categories');
-    const json = await response.json();
-    return Array.isArray(json) ? json : (json.data || []);
+    const json = await handleResponse(response);
+    if (!json) return getDefaultCategories();
+    // Support both direct array and paginated results
+    return Array.isArray(json) ? json : (json.results || json.data || []);
   } catch (error) {
     console.error('Error fetching categories:', error);
     // Return default categories if fetch fails
@@ -192,8 +232,7 @@ export const createCategory = async (categoryData) => {
       body: JSON.stringify(categoryData),
     });
     
-    if (!response.ok) throw new Error('Failed to create category');
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error creating category:', error);
     throw error;
@@ -217,11 +256,7 @@ export const submitSellerReview = async (sellerId, { rating, comment }) => {
         comment,
       }),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to submit review');
-    }
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error submitting review:', error);
     throw error;
@@ -231,8 +266,8 @@ export const submitSellerReview = async (sellerId, { rating, comment }) => {
 export const getSellerReviews = async (sellerEmail) => {
   try {
     const response = await fetch(`${BASE_URL}/reviews/?seller__email=${encodeURIComponent(sellerEmail)}`);
-    if (!response.ok) throw new Error('Failed to fetch reviews');
-    const data = await response.json();
+    const data = await handleResponse(response);
+    if (!data) return [];
     return data.results || data;
   } catch (error) {
     console.error('Error fetching reviews:', error);
@@ -284,9 +319,8 @@ export const reportItem = async (itemId, reason, description) => {
         description: description.substring(0, 1000),
       }),
     });
-    if (!response.ok) throw new Error('Failed to report item');
-    const data = await response.json();
-    return { success: true, reportId: data.id };
+    const data = await handleResponse(response);
+    return { success: true, reportId: data?.id };
   } catch (error) {
     console.error('Error reporting item:', error);
     throw error;
@@ -351,12 +385,7 @@ export const registerUserAsync = async ({ name, email, password, role = 'buyer' 
     }),
   });
   
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(JSON.stringify(error) || 'Registration failed');
-  }
-  
-  const data = await response.json();
+  const data = await handleResponse(response);
   localStorage.setItem('authToken_v1', data.token);
   const userObj = {
     id: data.user.id,
@@ -375,11 +404,7 @@ export const authenticateUserAsync = async ({ email, password }) => {
     body: JSON.stringify({ username: email, password }),
   });
   
-  if (!response.ok) {
-    throw new Error('Invalid credentials');
-  }
-  
-  const data = await response.json();
+  const data = await handleResponse(response);
   localStorage.setItem('authToken_v1', data.token);
   const userObj = {
     id: data.user.id,
@@ -406,8 +431,8 @@ export const getWishlist = async () => {
     const response = await fetch(`${BASE_URL}/wishlist/`, {
       headers: getAuthHeaders(),
     });
-    if (!response.ok) throw new Error('Failed to fetch wishlist');
-    const data = await response.json();
+    const data = await handleResponse(response);
+    if (!data) return [];
     // Return array of item IDs for compatibility or full objects? 
     // Let's return the full objects but provide a way to get IDs.
     return data.results || data; 
@@ -424,8 +449,7 @@ export const addToWishlist = async (itemId) => {
       headers: getAuthHeaders(),
       body: JSON.stringify({ product: itemId }),
     });
-    if (!response.ok) throw new Error('Failed to add to wishlist');
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error adding to wishlist:', error);
     throw error;
@@ -495,11 +519,7 @@ export const updateUserProfile = async ({ name, email }) => {
         profile: { full_name: name }
       }),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.email ? errorData.email[0] : 'Failed to update profile');
-    }
-    const updatedBackendUser = await response.json();
+    const updatedBackendUser = await handleResponse(response);
     
     const updatedUser = {
       ...currentUser,
@@ -531,11 +551,7 @@ export const changePassword = async ({ currentPassword, newPassword }) => {
         new_password: newPassword,
       }),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.old_password ? errorData.old_password[0] : errorData.new_password ? errorData.new_password[0] : 'Failed to change password');
-    }
-    return { success: true, message: 'Password changed successfully' };
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error changing password:', error);
     throw error;
@@ -552,10 +568,7 @@ export const deleteAccount = async ({ password }) => {
       headers: getAuthHeaders(),
       body: JSON.stringify({ password }),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.password ? errorData.password[0] : 'Failed to delete account');
-    }
+    return await handleResponse(response);
 
     logout(); // Clear all user-related data
     // Clear wishlist and other user data (if not handled by backend on delete)
@@ -581,8 +594,8 @@ export const getUsers = async () => {
     const response = await fetch(`${BASE_URL}/users/`, {
       headers: getAuthHeaders(),
     });
-    if (!response.ok) throw new Error('Failed to fetch users');
-    const data = await response.json();
+    const data = await handleResponse(response);
+    if (!data) return [];
     return data.results || data;
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -599,8 +612,7 @@ export const updateUserRole = async (userId, newRole) => {
         profile: { role: newRole }
       }),
     });
-    if (!response.ok) throw new Error('Failed to update user role');
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error updating user role:', error);
     throw error;
@@ -631,8 +643,8 @@ export const getReports = async () => {
     const response = await fetch(`${BASE_URL}/reports/`, {
       headers: getAuthHeaders(),
     });
-    if (!response.ok) throw new Error('Failed to fetch reports');
-    const data = await response.json();
+    const data = await handleResponse(response);
+    if (!data) return [];
     return data.results || data;
   } catch (error) {
     console.error('Error fetching reports:', error);

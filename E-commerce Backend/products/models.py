@@ -20,6 +20,8 @@ class UserProfile(models.Model):
     postal_code = models.CharField(max_length=20, blank=True)
     bio = models.TextField(blank=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
     
     def __str__(self):
         return f"{self.user.username} - {self.role}"
