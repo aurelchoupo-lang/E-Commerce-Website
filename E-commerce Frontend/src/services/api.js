@@ -1,6 +1,9 @@
 // RESTful Table API Service Layer
 
-const BASE_URL = '/api';
+const VITE_API_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = VITE_API_URL 
+  ? (VITE_API_URL.endsWith('/api') ? VITE_API_URL : `${VITE_API_URL}/api`)
+  : '/api';
 
 // Helper for auth headers
 const getAuthHeaders = () => {
