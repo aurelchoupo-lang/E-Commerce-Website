@@ -12,4 +12,3 @@ services:
         value: False
       - key: ALLOWED_HOSTS
         value: "*"
-    startCommand: "gunicorn core.wsgi:application"
