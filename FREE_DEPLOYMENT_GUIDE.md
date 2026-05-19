@@ -24,7 +24,7 @@ Render is the absolute easiest way to deploy Python/Django for free.
     - **Name**: `ecommerce-backend-api` (or any name)
     - **Root Directory**: `E-commerce Backend`
     - **Environment**: `Python`
-    - **Build Command**: `./build.sh`
+    - **Build Command**: `./build.sh` (⚠️ IMPORTANT: Ensure this is set to run migrations)
     - **Start Command**: `gunicorn core.wsgi:application`
     - **Instance Type**: `Free`
 4. Expand **Advanced** and add these Environment Variables:
@@ -36,6 +36,42 @@ Render is the absolute easiest way to deploy Python/Django for free.
 6. Once deployed, copy your backend URL (e.g. `https://ecommerce-backend-api.onrender.com`).
 
 > **Note**: Render's free tier spins down after 15 minutes of inactivity. It may take ~30 seconds for your backend to "wake up" when you make your first request of the day.
+
+---
+
+---
+
+## 🔎 Site Navigation & Features
+
+Once deployed, here is where you can find all key options and features of the E-commerce website:
+
+### 🏠 Homepage (The Marketplace)
+- **Search Bar**: Located at the top, allows searching products by title or description.
+- **Category Filter**: Below the search bar, click on any category (e.g., Electronics, Furniture) to filter listings.
+- **Advanced Filters**: 
+    - Click **"Show Filters"** to reveal Price Range, Local Items, and Durable Items toggles.
+    - **Min/Max Price**: Filter items by budget.
+    - **Local/Durable**: Toggle eco-friendly and local sourcing filters.
+- **Sorting**: Use the dropdown (top right of item list) to sort by Newest, Oldest, Price, or Title.
+
+### 📦 Product & Listing Management
+- **Item Cards**: Hover over any item to see quick details; click for the full product page.
+- **Product Details**: 
+    - View full description, price, condition, and location.
+    - **Wishlist**: Click the heart icon to save items for later.
+    - **Report Item**: Found on the product page to flag prohibited or suspicious content.
+- **Sell Item** (Navbar): Accessible to Sellers and Admins. Provides a form to add a new listing with image upload or URL.
+- **My Listings** (Navbar): A personal dashboard to manage your active listings (Edit, Delete, Track Sales).
+
+### ⚙️ User Settings
+- **Profile Management**: Update your name, avatar, and contact info under **Settings**.
+- **Security**: Change your password or delete your account in the Security tab of Settings.
+
+### 🛡️ Admin Center (Admin Only)
+- **Admin Dashboard**: Accessible via the "Admin" link in the navbar for authorized users.
+- **User Management**: Oversee all users, change roles (Buyer/Seller/Admin), and manage account status.
+- **Items Management**: A master list of all products on the platform for global moderation.
+- **Reports Management**: View reported items and take action (dismiss or remove) to keep the community safe.
 
 ---
 
@@ -57,6 +93,28 @@ Vercel is incredible for React applications and connects directly to GitHub.
 4. Expand **Environment Variables** and add:
     - `VITE_API_BASE_URL`: Paste the Render URL from Part 1 here (e.g. `https://ecommerce-backend-api.onrender.com/api`)
 5. Click **Deploy**. Vercel will build and host your site on a secure `https://...vercel.app` domain within seconds.
+
+---
+
+## ⚡ Deployment Cheat Sheet
+
+### Backend (Render)
+- **Repo Root**: `/E-commerce Backend`
+- **Build Command**: `./build.sh`
+- **Start Command**: `gunicorn core.wsgi:application`
+- **Required Env Vars**:
+    - `SECRET_KEY`: (Any long random string)
+    - `ALLOWED_HOSTS`: `*` (or your frontend domain)
+    - `DEBUG`: `False`
+    - `DATABASE_URL`: (Optional, SQLite is used by default)
+
+### Frontend (Vercel)
+- **Repo Root**: `/E-commerce Frontend`
+- **Framework**: Vite
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **Required Env Vars**:
+    - `VITE_API_BASE_URL`: `https://your-backend.onrender.com/api`
 
 ---
 

@@ -156,6 +156,7 @@ export const createItem = async (itemData) => {
       condition: itemData.condition || 'Good',
       location: itemData.location || '',
       stock: parseInt(itemData.quantity) || 1,
+      image_url: itemData.image_url && !itemData.image_url.startsWith('data:') ? itemData.image_url : undefined,
     };
 
     if (itemData.image_url && itemData.image_url.startsWith('data:')) {
@@ -186,6 +187,7 @@ export const updateItem = async (id, itemData) => {
       body: JSON.stringify({
         ...itemData,
         stock: itemData.quantity,
+        image_url: itemData.image_url && !itemData.image_url.startsWith('data:') ? itemData.image_url : undefined,
       }),
     });
     

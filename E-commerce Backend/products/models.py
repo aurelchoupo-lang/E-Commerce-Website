@@ -66,6 +66,7 @@ class Product(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     image = models.ImageField(upload_to='products/', null=True, blank=True)
+    image_url = models.URLField(max_length=1000, null=True, blank=True)
     condition = models.CharField(max_length=20, choices=CONDITION_CHOICES, default='Good')
     location = models.CharField(max_length=255, default='Unknown')
     seller_name = models.CharField(max_length=255, default='Anonymous')

@@ -26,8 +26,11 @@ export const formatDate = (timestamp) => {
  * Format relative time
  */
 export const formatRelativeTime = (timestamp) => {
+  const time = new Date(timestamp).getTime();
+  if (isNaN(time)) return 'Unknown';
+  
   const now = Date.now();
-  const diff = now - timestamp;
+  const diff = now - time;
   
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);

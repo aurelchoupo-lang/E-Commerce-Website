@@ -107,12 +107,12 @@ function MyListings() {
           <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md">
             <i className="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
             <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
-              {isBuyer ? t('common.error') : t('common.error')}
+              {isBuyer ? t('wishlist.empty') || 'Your wishlist is empty' : t('item.empty_listings') || 'No active listings'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               {isBuyer
-                ? t('nav.wishlist')
-                : t('footer.about_text')}
+                ? t('wishlist.empty_desc') || "You haven't saved any items yet."
+                : t('item.start_selling') || "Create a listing to start selling your items."}
             </p>
             {!isBuyer && (
               <Link to="/add-item" className="btn-primary">

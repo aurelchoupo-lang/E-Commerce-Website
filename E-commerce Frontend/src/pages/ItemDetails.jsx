@@ -26,6 +26,17 @@ function ItemDetails() {
     loadItem();
   }, [id]);
 
+  useEffect(() => {
+    const user = getCurrentUserObj();
+    if (contactOpen && user) {
+      setContactForm(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || ''
+      }));
+    }
+  }, [contactOpen]);
+
   const loadItem = async () => {
     try {
       setLoading(true);
@@ -104,15 +115,6 @@ function ItemDetails() {
     }
   };
 
-  useEffect(() => {
-    if (contactOpen && userObj) {
-      setContactForm(prev => ({
-        ...prev,
-        name: userObj.name || '',
-        email: userObj.email || ''
-      }));
-    }
-  }, [contactOpen, userObj]);
 
   const handleContactChange = (e) => {
     setContactForm({ ...contactForm, [e.target.name]: e.target.value });

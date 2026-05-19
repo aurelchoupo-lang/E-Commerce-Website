@@ -23,7 +23,6 @@ class ReportSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(slug_field='name', queryset=Category.objects.all())
     image = Base64ImageField(required=False)
-    image_url = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = Product
@@ -33,12 +32,6 @@ class ProductSerializer(serializers.ModelSerializer):
             'seller_name', 'seller_email', 'is_local', 'is_durable', 
             'co2_footprint', 'stock', 'is_active', 'created_at', 'updated_at'
         ]
-    
-    def to_internal_value(self, data):
-        if 'image_url' in data and data['image_url']:
-            data = data.copy()
-            del data['image_url']
-        return super().to_internal_value(data)
 
 class WishlistSerializer(serializers.ModelSerializer):
     product_details = ProductSerializer(source='product', read_only=True)
