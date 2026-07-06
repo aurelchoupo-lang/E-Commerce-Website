@@ -24,14 +24,15 @@ Render is the absolute easiest way to deploy Python/Django for free.
     - **Name**: `ecommerce-backend-api` (or any name)
     - **Root Directory**: `E-commerce Backend`
     - **Environment**: `Python`
-    - **Build Command**: `./build.sh` (⚠️ IMPORTANT: Ensure this is set to run migrations)
-    - **Start Command**: `gunicorn core.wsgi:application`
+    - **Build Command**: `./build.sh`
+    - **Start Command**: `python manage.py migrate && gunicorn core.wsgi:application` (⚠️ IMPORTANT: Running migrations on startup is required for SQLite on Render so the tables are created when the container boots or wakes up).
     - **Instance Type**: `Free`
 4. Expand **Advanced** and add these Environment Variables:
     - `PYTHON_VERSION`: `3.10.0` (or whatever your local version is)
     - `SECRET_KEY`: Generate a random long string 
     - `DEBUG`: `False`
     - `ALLOWED_HOSTS`: `*` (You can restrict this to your frontend URL later)
+    - `CSRF_TRUSTED_ORIGINS`: `https://your-frontend.vercel.app` (Replace with your actual Vercel URL, this is crucial for registering/logging in without security errors).
 5. Click **Create Web Service**. Render will now automatically install your dependencies, run migrations, and launch your API!
 6. Once deployed, copy your backend URL (e.g. `https://ecommerce-backend-api.onrender.com`).
 
@@ -77,7 +78,7 @@ Once deployed, here is where you can find all key options and features of the E-
 
 ## Part 2: Deploying the React Frontend (Vercel)
 
-Vercel is incredible for React applications and connects directly to GitHub.
+Vercel is incredible for React applications and connects directly to GitHub. A `vercel.json` file has been added to your `E-commerce Frontend` directory to automatically configure routing redirects to avoid `404 NOT_FOUND` errors when refreshing sub-pages.
 
 ### Prerequisites
 1. Ensure your repository is pushed to GitHub.
@@ -93,6 +94,7 @@ Vercel is incredible for React applications and connects directly to GitHub.
 4. Expand **Environment Variables** and add:
     - `VITE_API_BASE_URL`: Paste the Render URL from Part 1 here (e.g. `https://ecommerce-backend-api.onrender.com/api`)
 5. Click **Deploy**. Vercel will build and host your site on a secure `https://...vercel.app` domain within seconds.
+    - ⚠️ **IMPORTANT**: If you ever update or add environment variables in Vercel later, you must redeploy by choosing **"Redeploy"** and **unchecking "Use existing build cache"** (Clean Build). Vite embeds environment variables at build-time, and using the build cache will prevent new variables from taking effect.
 
 ---
 
@@ -101,11 +103,12 @@ Vercel is incredible for React applications and connects directly to GitHub.
 ### Backend (Render)
 - **Repo Root**: `/E-commerce Backend`
 - **Build Command**: `./build.sh`
-- **Start Command**: `gunicorn core.wsgi:application`
+- **Start Command**: `python manage.py migrate && gunicorn core.wsgi:application` (Required to migrate SQLite at startup)
 - **Required Env Vars**:
     - `SECRET_KEY`: (Any long random string)
     - `ALLOWED_HOSTS`: `*` (or your frontend domain)
     - `DEBUG`: `False`
+    - `CSRF_TRUSTED_ORIGINS`: `https://your-frontend.vercel.app` (To allow forms, auth, and state changes)
     - `DATABASE_URL`: (Optional, SQLite is used by default)
 
 ### Frontend (Vercel)
